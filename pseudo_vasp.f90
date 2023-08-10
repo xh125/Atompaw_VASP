@@ -122,27 +122,29 @@ MODULE PSEUDO_struct
      CHARACTER*40 SZNAMP         ! header
      CHARACTER*2  ELEMENT        ! Name of element
   END TYPE potcar
+  
 END MODULE PSEUDO_struct
 
 MODULE PSEUDO
-      USE PSEUDO_struct
+  USE PSEUDO_struct
 !**********************************************************************
 !  interface to a function that returns a pointer
 !  to the current pseudopotential, the function itself
 !  can be found in core_rel.F 
 !**********************************************************************
-      INTERFACE
-      FUNCTION PP_POINTER(P, NI, NT)
+  INTERFACE
+  
+    FUNCTION PP_POINTER(P, NI, NT)
         USE pseudo_struct
         IMPLICIT NONE
         TYPE (potcar),TARGET :: P(:)
         INTEGER :: NI      ! ion index
         INTEGER :: NT      ! type index
         TYPE (potcar), POINTER :: PP_POINTER
-      END FUNCTION PP_POINTER
-      END INTERFACE      
+    END FUNCTION PP_POINTER
+  END INTERFACE      
 
-      CONTAINS
+  CONTAINS
 
 !**************** SUBROUTINE RD_PSEUDO *********************************
 ! RCS:  $Id: pseudo.F,v 1.5 2003/06/27 13:22:22 kresse Exp kresse $
@@ -154,74 +156,73 @@ MODULE PSEUDO
 !
 !***********************************************************************
 
-      SUBROUTINE RD_PSEUDO(INFO,P, &
-     &           NTYP,NTYPD,LDIM,LDIM2,LMDIM, &
-     &           POMASS,RWIGS,TYPE,CHANNELS, &
-     &           IU0,IU6,NWRITE,LPAW)
-      USE base
-      USE ini
-!      USE main_mpi
-      IMPLICIT NONE
+  SUBROUTINE RD_PSEUDO(INFO,P,LDIM,LDIM2,LMDIM, &
+     &        POMASS,RWIGS,TYPEs,CHANNELS,IU0,IU6,NWRITE,LPAW)
+    USE base
+    USE ini
+!    USE main_mpi
+    IMPLICIT NONE
 
-      TYPE(INFO_STRUCT) INFO
-      INTEGER  NTYP,NTYPD      ! number of types (acutal/dimension)
-      INTEGER LDIM,LDIM2,LMDIM ! see pseudo.inc
-      TYPE (potcar) P(NTYPD)   ! PP information
-      LOGICAL LPAW
-      INTEGER IU6,IU0          ! where I/O goes
+    TYPE(INFO_STRUCT) :: INFO
+    !INTEGER  NTYP,NTYPD      ! number of types (acutal/dimension)
+    INTEGER LDIM,LDIM2,LMDIM ! see pseudo.inc
+    TYPE (potcar) :: P   ! PP information
+    LOGICAL LPAW
+    INTEGER IU6,IU0          ! where I/O goes
 ! wigner seitz radius and mass found on INCAR
-      REAL(q)    RWIGS(NTYPD),POMASS(NTYPD),VCA(NTYPD)
-      REAL(q)    BOUNDARY
-      CHARACTER(LEN=2) :: TYPE(NTYPD)
+    REAL(q)    RWIGS,POMASS,VCA
+    REAL(q)    BOUNDARY
+    CHARACTER(LEN=2) :: TYPEs
 ! dynamical work space
-      INTEGER,PARAMETER :: ISDIM=100
-      CHARACTER (80) STRING(ISDIM)
-      CHARACTER (40) FORM
+    INTEGER,PARAMETER :: ISDIM=100
+    CHARACTER (80) STRING(ISDIM)
+    CHARACTER (40) FORM
 ! temporary varibales
-      INTEGER IDUMM1,IDUMM2,IDUMM3,L2,NREAD,NL,IC,L,LP,I,J,K,CHANNELS,LMAX
-      LOGICAL LDUM
-      CHARACTER (1)  CSEL
-      INTEGER IREAD,IWRITE,NWRITE,NMAX
-      LOGICAL LPOTPSC
-      INTEGER IERR
+    INTEGER IDUMM1,IDUMM2,IDUMM3,L2,NREAD,NL,IC,L,LP,I,J,K,CHANNELS,LMAX
+    LOGICAL LDUM
+    CHARACTER (1) :: CSEL
+    INTEGER IREAD,IWRITE,NWRITE,NMAX
+    LOGICAL LPOTPSC
+    INTEGER IERR
 !#ifdef debug
-      REAL(q) :: QR, F, DUMMY
+    REAL(q) :: QR, F, DUMMY
 !#endif
 
-      OPEN(UNIT=10,FILE='POTCAR',STATUS='OLD',IOSTAT=IERR)
-      IF (IERR/=0) THEN
-         OPEN(UNIT=10,FILE='POTCAR',STATUS='OLD')
-      ENDIF
+    OPEN(UNIT=10,FILE='POTCAR',STATUS='OLD',IOSTAT=IERR)
+    IF (IERR/=0) THEN
+       OPEN(UNIT=10,FILE='POTCAR',STATUS='OLD')
+    ENDIF
 
-      LPAW = .FALSE.
-      INFO%LOVERL=.FALSE.
-      INFO%LCORE =.FALSE.
+    LPAW = .FALSE.
+    INFO%LOVERL=.FALSE.
+    INFO%LCORE =.FALSE.
 !-----------------------------------------------------------------------
 ! loop over all pseudpotentials on POTCAR file
 !-----------------------------------------------------------------------
 !     NTYP=1
-      WRITE(6, *) "NTYPD=",NTYPD
+      !WRITE(6, *) "NTYPD=",NTYPD
       WRITE(6, *) "LDIM=",LDIM
-      forever: DO NTYP=1,NTYPD
-      P(NTYP)%LDIM =LDIM
-      P(NTYP)%LMDIM=LMDIM
-      P(NTYP)%LDIM2=LDIM2
-      P(NTYP)%ESELF=0
-      NULLIFY(P(NTYP)%QPAW)
-      NULLIFY(P(NTYP)%JPAW)
-      NULLIFY(P(NTYP)%QPAW_FOCK)
-      NULLIFY(P(NTYP)%QTOT)
-      NULLIFY(P(NTYP)%QATO)
-      NULLIFY(P(NTYP)%NABLA)
-      NULLIFY(P(NTYP)%ATOMIC_N)
       
-      READ(10,'(A40)',END=100,ERR=100) P(NTYP)%SZNAMP
+      !forever: DO NTYP=1,NTYPD
+      P%LDIM =LDIM
+      P%LMDIM=LMDIM
+      P%LDIM2=LDIM2
+      P%ESELF=0
+      NULLIFY(P%QPAW)
+      NULLIFY(P%JPAW)
+      NULLIFY(P%QPAW_FOCK)
+      NULLIFY(P%QTOT)
+      NULLIFY(P%QATO)
+      NULLIFY(P%NABLA)
+      NULLIFY(P%ATOMIC_N)
+      
+      READ(10,'(A40)',END=100,ERR=100) P%SZNAMP
 
       IF (IU6>=0) &
-      WRITE(IU6,*)'POTCAR:  ',P(NTYP)%SZNAMP
+      WRITE(IU6,*)'POTCAR:  ',P%SZNAMP
 
-      READ(10,*) P(NTYP)%ZVALF
-      P(NTYP)%ZVALF_ORIG=P(NTYP)%ZVALF
+      READ(10,*) P%ZVALF
+      P%ZVALF_ORIG=P%ZVALF
 !-----------------------------------------------------------------------
 !  if there is PSCTR header read in and parse information from this
 !  header
@@ -243,44 +244,44 @@ MODULE PSEUDO
            WRITE(IU6,'(A80)') (STRING(I),I=1,IWRITE)
 
 ! parse from STRING necessary information
-        CALL RDPARS(ISDIM,STRING,IREAD,P(NTYP),IU6)
-        IF (TYPE(NTYP)=='  ') THEN
-           TYPE(NTYP)=P(NTYP)%ELEMENT
+        CALL RDPARS(ISDIM,STRING,IREAD,P,IU6)
+        IF (TYPEs=='  ') THEN
+           TYPEs=P%ELEMENT
         ENDIF
-        IF (TYPE(NTYP)/=P(NTYP)%ELEMENT.AND.NWRITE>=0.AND. IU0>=0) THEN
+        IF (TYPEs/=P%ELEMENT.AND.NWRITE>=0.AND. IU0>=0) THEN
           WRITE(IU0,*)'WARNING: type information on POSCAR and POTCAR are incompatible'
           WRITE(IU0,*)'POTCAR overwrites the type information in POSCAR'
-          WRITE(IU0,'(A,I3,A,2A3)')' typ ',NTYP,' type information: ',TYPE(NTYP),P(NTYP)%ELEMENT
+          WRITE(IU0,'(A,2A3)') ' type information: ',TYPEs,P%ELEMENT
         ENDIF
 ! set and check POMASS
-        IF (POMASS(NTYP)<0) POMASS(NTYP)=P(NTYP)%POMASS
-        IF (ABS(POMASS(NTYP)-P(NTYP)%POMASS)>1E-3_q) THEN
+        IF (POMASS<0) POMASS=P%POMASS
+        IF (ABS(POMASS-P%POMASS)>1E-3_q) THEN
         IF (NWRITE>=0.AND. IU0>=0) THEN
           WRITE(IU0,*)'WARNING: mass on POTCAR and INCAR are incompatible'
-          WRITE(IU0,*)' typ',NTYP,' Mass',POMASS(NTYP),P(NTYP)%POMASS
+          WRITE(IU0,*)' Mass',POMASS,P%POMASS
         ENDIF
         ENDIF
 ! set VCA tag
-        IF (VCA(NTYP)<0) VCA(NTYP)=P(NTYP)%VCA
+        VCA=P%VCA
 ! set RWIGS
-        IF (RWIGS(NTYP)==0) RWIGS(NTYP)=P(NTYP)%RWIGS
+        RWIGS=P%RWIGS
 
 !-----------------------------------------------------------------------
 ! local potential, gradient corrections and type of gradient corrections
 ! partial core and atomic charge density
 !-----------------------------------------------------------------------
       READ(10,'(1X,A1)') CSEL
-      READ(10,*) P(NTYP)%PSGMAX
-      ALLOCATE(P(NTYP)%PSP(NPSPTS,5))
+      READ(10,*) P%PSGMAX
+      ALLOCATE(P%PSP(NPSPTS,5))
 
-      READ(10,*) (P(NTYP)%PSP (I,2),I=1,NPSPTS)
+      READ(10,*) (P%PSP (I,2),I=1,NPSPTS)
       DO I=1,NPSPTS
-          P(NTYP)%PSP(I,1)=(P(NTYP)%PSGMAX/NPSPTS)*(I-1)
+          P%PSP(I,1)=(P%PSGMAX/NPSPTS)*(I-1)
       ENDDO
 ! PSCORE is equal to V(q) + 4 Pi / q^2
-      P(NTYP)%PSCORE=P(NTYP)%PSP(1,2)
+      P%PSCORE=P%PSP(1,2)
 
-      CALL SPLCOF(P(NTYP)%PSP(1,1) ,NPSPTS,NPSPTS,0._q)
+      CALL SPLCOF(P%PSP(1,1) ,NPSPTS,NPSPTS,0._q)
       IF (NWRITE>=0 .AND. IU6>=0) WRITE(IU6,*)' local pseudopotential read in'
 
 !  gradient corrections this is now overwritten by PSCTR header
@@ -294,82 +295,82 @@ MODULE PSEUDO
 !
       IF (CSEL=='c') THEN
         INFO%LCORE=.TRUE.
-        ALLOCATE(P(NTYP)%PSPCOR(NPSPTS))
+        ALLOCATE(P%PSPCOR(NPSPTS))
         IF (NWRITE>=0 .AND. IU6>=0) WRITE(IU6,*)' partial core-charges read in'
 
-        READ(10,*) (P(NTYP)%PSPCOR (I),I=1,NPSPTS)
+        READ(10,*) (P%PSPCOR (I),I=1,NPSPTS)
         READ(10,'(1X,A1)') CSEL
       ELSE
-         NULLIFY(P(NTYP)%PSPCOR)
+         NULLIFY(P%PSPCOR)
       ENDIF
       IF (CSEL=='k') THEN
-        ALLOCATE(P(NTYP)%PSPTAU(NPSPTS))
+        ALLOCATE(P%PSPTAU(NPSPTS))
         IF (NWRITE>=0 .AND. IU6>=0) WRITE(IU6,*)' partial kinetic energy density read in'
 
-        READ(10,*) (P(NTYP)%PSPTAU (I),I=1,NPSPTS)
+        READ(10,*) (P%PSPTAU (I),I=1,NPSPTS)
         READ(10,'(1X,A1)') CSEL
       ELSE
-         NULLIFY(P(NTYP)%PSPTAU)
+         NULLIFY(P%PSPTAU)
       ENDIF
       IF (CSEL=='K') THEN
-        ALLOCATE(P(NTYP)%PSPTAUVAL(NPSPTS))
+        ALLOCATE(P%PSPTAUVAL(NPSPTS))
         IF (NWRITE>=0 .AND. IU6>=0) WRITE(IU6,*)' kinetic energy density of atom read in'
 
-        READ(10,*) (P(NTYP)%PSPTAUVAL(I),I=1,NPSPTS)
+        READ(10,*) (P%PSPTAUVAL(I),I=1,NPSPTS)
         READ(10,'(1X,A1)') CSEL
       ELSE
-         NULLIFY(P(NTYP)%PSPTAUVAL)
+         NULLIFY(P%PSPTAUVAL)
       ENDIF
 
-      ALLOCATE(P(NTYP)%PSPRHO(NPSPTS))
-      READ(10,*) (P(NTYP)%PSPRHO (I),I=1,NPSPTS)
+      ALLOCATE(P%PSPRHO(NPSPTS))
+      READ(10,*) (P%PSPRHO (I),I=1,NPSPTS)
       IF (NWRITE>=0 .AND. IU6>=0) WRITE(IU6,*)' atomic valenz-charges read in'
 
       CHANNELS=0
-      P(NTYP)%LMMAX =0
-      P(NTYP)%LMAX  =0
-      P(NTYP)%PSMAXN=0
+      P%LMMAX =0
+      P%LMAX  =0
+      P%PSMAXN=0
 !-----------------------------------------------------------------------
 ! depletion charges to 0
 !-----------------------------------------------------------------------
-      ALLOCATE(P(NTYP)%DION(LDIM,LDIM),P(NTYP)%QION(LDIM,LDIM), &
-     &         P(NTYP)%LPS(LDIM),P(NTYP)%NLPRO(LDIM), &
-     &         P(NTYP)%PSPNL(0:NPSNL,LDIM),P(NTYP)%PSPRNL(NPSRNL,5,LDIM),P(NTYP)%E(LDIM))
+      ALLOCATE(P%DION(LDIM,LDIM),P%QION(LDIM,LDIM), &
+     &         P%LPS(LDIM),P%NLPRO(LDIM), &
+     &         P%PSPNL(0:NPSNL,LDIM),P%PSPRNL(NPSRNL,5,LDIM),P%E(LDIM))
       IF (INFO%NLSPLINE) THEN
-         ALLOCATE(P(NTYP)%PSPNL_SPLINE(0:NPSNL,5,LDIM))
+         ALLOCATE(P%PSPNL_SPLINE(0:NPSNL,5,LDIM))
       ELSE
-         NULLIFY (P(NTYP)%PSPNL_SPLINE)
+         NULLIFY (P%PSPNL_SPLINE)
       ENDIF
 
 ! Intel efc compiler workaround (at least version 6.X)
-!      P(NTYP)%DION=0
-!      P(NTYP)%QION=0
+!      P%DION=0
+!      P%QION=0
       DO I=1,LDIM
          DO J=1,LDIM
-            P(NTYP)%DION(I,J)=0
-            P(NTYP)%QION(I,J)=0
+            P%DION(I,J)=0
+            P%QION(I,J)=0
          ENDDO
       ENDDO
-      P(NTYP)%LPS=0
-      P(NTYP)%NLPRO=0
+      P%LPS=0
+      P%NLPRO=0
 
-      P(NTYP)%PSDMAX=0
-      NULLIFY(P(NTYP)%QDEP,P(NTYP)%AUG,P(NTYP)%AUG_SOFT)
-      NULLIFY(P(NTYP)%NDEP)
+      P%PSDMAX=0
+      NULLIFY(P%QDEP,P%AUG,P%AUG_SOFT)
+      NULLIFY(P%NDEP)
 !-----------------------------------------------------------------------
 !  read reciprocal projection operators
 !-----------------------------------------------------------------------
-      READ(10,*,ERR=620,END=600)  P(NTYP)%PSMAXN,LDUM
-  620 IF (P(NTYP)%PSMAXN==0) GOTO 600
+      READ(10,*,ERR=620,END=600)  P%PSMAXN,LDUM
+  620 IF (P%PSMAXN==0) GOTO 600
 
   610 READ(10,'(1X,A1)',ERR=600,END=600) CSEL
       IF (CSEL== 'D'  .OR. CSEL== 'A' .OR. CSEL=='P' ) GOTO 650
       IF (CSEL== 'E' ) GOTO 600
 
-      READ(10,*)  P(NTYP)%LPS(CHANNELS+1),P(NTYP)%NLPRO(CHANNELS+1), &
-     &            P(NTYP)%PSRMAX
+      READ(10,*)  P%LPS(CHANNELS+1),P%NLPRO(CHANNELS+1), &
+     &            P%PSRMAX
 
-      IC= P(NTYP)%NLPRO(CHANNELS+1)
+      IC= P%NLPRO(CHANNELS+1)
       IF (CHANNELS+IC>LDIM) THEN
          IF (IU0>=0) &
          WRITE(IU0,*)'RD_PSEUDO: internal ERROR: increase LDIM'
@@ -377,77 +378,77 @@ MODULE PSEUDO
       ENDIF
 
       DO 615 L=CHANNELS+1,CHANNELS+IC
-        P(NTYP)%LPS(L)   =P(NTYP)%LPS   (CHANNELS+1)
-        P(NTYP)%NLPRO(L) =P(NTYP)%NLPRO (CHANNELS+1)
+        P%LPS(L)   =P%LPS   (CHANNELS+1)
+        P%NLPRO(L) =P%NLPRO (CHANNELS+1)
   615 CONTINUE
 
 !-----Multipliers DION
       READ(10,*) &
-     & ((P(NTYP)%DION(L,LP),L=CHANNELS+1,CHANNELS+IC),LP=CHANNELS+1,CHANNELS+IC)
+     & ((P%DION(L,LP),L=CHANNELS+1,CHANNELS+IC),LP=CHANNELS+1,CHANNELS+IC)
 
-      P(NTYP)%LMMAX=P(NTYP)%LMMAX+(2*P(NTYP)%LPS(CHANNELS+1)+1)*IC
-      IF (P(NTYP)%LMMAX>LMDIM) THEN
+      P%LMMAX=P%LMMAX+(2*P%LPS(CHANNELS+1)+1)*IC
+      IF (P%LMMAX>LMDIM) THEN
          IF (IU0>=0) &
-         WRITE(IU0,*)'MAIN: ERROR: increase LMDIM to ',P(NTYP)%LMMAX
+         WRITE(IU0,*)'MAIN: ERROR: increase LMDIM to ',P%LMMAX
          STOP
       ENDIF
 
-      DO 630 NL=1,IC
+      projectors: DO NL=1,IC
 !-----reciprocal projection operator
         READ(10,*)
-        READ(10,*)(P(NTYP)%PSPNL  (I,CHANNELS+NL),I=1,NPSNL)
+        READ(10,*)(P%PSPNL  (I,CHANNELS+NL),I=1,NPSNL)
 
         IF (NWRITE>=0.AND.IU6>=0) &
              WRITE(IU6,*)' non local Contribution for L=', &
-                       P(NTYP)%LPS(CHANNELS+1),' read in'
-        IF (MOD(P(NTYP)%LPS(CHANNELS+1),2)==0) THEN
-           P(NTYP)%PSPNL(0,CHANNELS+NL) =  P(NTYP)%PSPNL(2,CHANNELS+NL)
+                       P%LPS(CHANNELS+1),' read in'
+        IF (MOD(P%LPS(CHANNELS+1),2)==0) THEN
+           P%PSPNL(0,CHANNELS+NL) =  P%PSPNL(2,CHANNELS+NL)
         ELSE
-           P(NTYP)%PSPNL(0,CHANNELS+NL) = -P(NTYP)%PSPNL(2,CHANNELS+NL)
+           P%PSPNL(0,CHANNELS+NL) = -P%PSPNL(2,CHANNELS+NL)
         ENDIF
         IF (INFO%NLSPLINE) THEN
-           P(NTYP)%PSPNL_SPLINE(:,2,CHANNELS+NL)=P(NTYP)%PSPNL(:,CHANNELS+NL)
+           P%PSPNL_SPLINE(:,2,CHANNELS+NL)=P%PSPNL(:,CHANNELS+NL)
            DO I=0,NPSNL
-              P(NTYP)%PSPNL_SPLINE (I,1,CHANNELS+NL)=(P(NTYP)%PSMAXN/NPSNL)*(I-1)
+              P%PSPNL_SPLINE (I,1,CHANNELS+NL)=(P%PSMAXN/NPSNL)*(I-1)
            ENDDO
            ! possibly this works, but one would need to inspect visually the behaviour at small q
-          ! BOUNDARY=(P(NTYP)%PSPNL (2,2,CHANNELS+NL)-P(NTYP)%PSPNL (1,2,CHANNELS+NL))/(P(NTYP)%PSMAXN/NPSNL)
-          ! IF (P(NTYP)%LPS(CHANNELS+1)/=1) THEN
+          ! BOUNDARY=(P%PSPNL (2,2,CHANNELS+NL)-P%PSPNL (1,2,CHANNELS+NL))/(P%PSMAXN/NPSNL)
+          ! IF (P%LPS(CHANNELS+1)/=1) THEN
           !    BOUNDARY=0
           ! ENDIF
            BOUNDARY=1E30
-           CALL SPLCOF(P(NTYP)%PSPNL_SPLINE (0,1,CHANNELS+NL) ,NPSNL+1,NPSNL+1,BOUNDARY)
+           CALL SPLCOF(P%PSPNL_SPLINE (0,1,CHANNELS+NL) ,NPSNL+1,NPSNL+1,BOUNDARY)
         ENDIF
 !-----real space projection operator
         READ(10,*)
-        READ(10,*)(P(NTYP)%PSPRNL (I,2,CHANNELS+NL),I=1,NPSRNL)
+        READ(10,*)(P%PSPRNL (I,2,CHANNELS+NL),I=1,NPSRNL)
 
         IF (NWRITE>=0.AND.IU6>0) &
                WRITE(IU6,*)'   real space projection operators read in'
 
         DO I=1,NPSRNL
-           P(NTYP)%PSPRNL (I,1,CHANNELS+NL)=(P(NTYP)%PSRMAX/NPSRNL)*(I-1)
+           P%PSPRNL (I,1,CHANNELS+NL)=(P%PSRMAX/NPSRNL)*(I-1)
         ENDDO
 
-        BOUNDARY=(P(NTYP)%PSPRNL (2,2,CHANNELS+NL)-P(NTYP)%PSPRNL (1,2,CHANNELS+NL))/(P(NTYP)%PSRMAX/NPSRNL)
-        IF (P(NTYP)%LPS(CHANNELS+1)/=1) THEN
+        BOUNDARY=(P%PSPRNL (2,2,CHANNELS+NL)-P%PSPRNL (1,2,CHANNELS+NL))/(P%PSRMAX/NPSRNL)
+        IF (P%LPS(CHANNELS+1)/=1) THEN
            BOUNDARY=0
         ENDIF
-        CALL SPLCOF(P(NTYP)%PSPRNL (1,1,CHANNELS+NL) ,NPSRNL,NPSRNL,BOUNDARY)
+        CALL SPLCOF(P%PSPRNL (1,1,CHANNELS+NL) ,NPSRNL,NPSRNL,BOUNDARY)
 !#ifdef debug
 !        DO K=1,(NPSRNL-1)*10+1
-!           QR=(P(NTYP)%PSRMAX/NPSRNL)/10*(K-1)
-!           CALL SPLVAL(QR,F,DUMMY,P(NTYP)%PSPRNL(1,1,CHANNELS+NL),NPSRNL,NPSRNL)
+!           QR=(P%PSRMAX/NPSRNL)/10*(K-1)
+!           CALL SPLVAL(QR,F,DUMMY,P%PSPRNL(1,1,CHANNELS+NL),NPSRNL,NPSRNL)
 !           WRITE(78,'(2F14.7)') QR,F
 !        ENDDO
 !        WRITE(78,*)
 !#endif
 
 
-  630 CONTINUE
+  enddo projectors
 
       CHANNELS=CHANNELS+IC
-      P(NTYP)%LMAX=CHANNELS
+      P%LMAX=CHANNELS
       GOTO 610
 
 !-----------------------------------------------------------------------
@@ -458,7 +459,7 @@ MODULE PSEUDO
    aug: IF ( CSEL /= 'P') THEN
 
       INFO%LOVERL=.TRUE.
-      ALLOCATE(P(NTYP)%QDEP(NPSRNL,5,LDIM2),P(NTYP)%NDEP(LDIM,LDIM))
+      ALLOCATE(P%QDEP(NPSRNL,5,LDIM2),P%NDEP(LDIM,LDIM))
 
       IF (NWRITE>=0.AND.IU6>=0) &
            WRITE(IU6,*)'   augmentation charges read in'
@@ -477,37 +478,37 @@ MODULE PSEUDO
         ENDIF
 
         IF (CSEL=='D') THEN
-         READ(10,*) IDUMM1,IDUMM2,P(NTYP)%QION(L,LP),P(NTYP)%PSDMAX
-         P(NTYP)%NDEP(L,LP)=-1
+         READ(10,*) IDUMM1,IDUMM2,P%QION(L,LP),P%PSDMAX
+         P%NDEP(L,LP)=-1
         ELSE
-         READ(10,*) IDUMM1,IDUMM2,IDUMM3,P(NTYP)%NDEP(L,LP), &
-     &              P(NTYP)%QION(L,LP),P(NTYP)%PSDMAX
-         IF (P(NTYP)%LPS(L)/=IDUMM1 .OR. P(NTYP)%LPS(LP)/=IDUMM2) THEN
+         READ(10,*) IDUMM1,IDUMM2,IDUMM3,P%NDEP(L,LP), &
+     &              P%QION(L,LP),P%PSDMAX
+         IF (P%LPS(L)/=IDUMM1 .OR. P%LPS(LP)/=IDUMM2) THEN
             IF (IU0>=0) &
             WRITE(IU0,*)'ERROR: on reading POTCAR augmentation charges', &
             '       are wrong'
             STOP
          ENDIF
         ENDIF
-        P(NTYP)%QION(LP,L) = P(NTYP)%QION(L,LP)
+        P%QION(LP,L) = P%QION(L,LP)
 
-        IF (P(NTYP)%NDEP(L,LP)==0) GOTO 667
+        IF (P%NDEP(L,LP)==0) GOTO 667
 
-        READ(10,*) (P(NTYP)%QDEP(I,2,L2),I=1,NPSRNL)
+        READ(10,*) (P%QDEP(I,2,L2),I=1,NPSRNL)
 
         DO 665 I=1,NPSRNL
-         P(NTYP)%QDEP(I,1,L2)=(I-1)*P(NTYP)%PSDMAX/NPSRNL
+         P%QDEP(I,1,L2)=(I-1)*P%PSDMAX/NPSRNL
   665   CONTINUE
         ! changed  12Dec96 (gK)
-        P(NTYP)%QDEP(NPSRNL,2,L2)=0 ! fix last value to zero
+        P%QDEP(NPSRNL,2,L2)=0 ! fix last value to zero
 
-        CALL SPLCOF(P(NTYP)%QDEP(1,1,L2),NPSRNL,NPSRNL,0._q)
+        CALL SPLCOF(P%QDEP(1,1,L2),NPSRNL,NPSRNL,0._q)
 
         L2   =L2   +1
         NREAD=NREAD+1
 
   667   READ(10,*,ERR=600,END=600)
-        IF (NREAD<ABS(P(NTYP)%NDEP(L,LP))) GOTO 661
+        IF (NREAD<ABS(P%NDEP(L,LP))) GOTO 661
 
       ENDDO
       ENDDO
@@ -517,101 +518,101 @@ MODULE PSEUDO
 !-----------------------------------------------------------------------
          INFO%LOVERL=.TRUE.
          LPAW=.TRUE.
-         READ(10,*) NMAX,P(NTYP)%PSDMAX
+         READ(10,*) NMAX,P%PSDMAX
 
          LMAX=0
          DO I=1,CHANNELS
-            LMAX=MAX( P(NTYP)%LPS(I),LMAX )
+            LMAX=MAX( P%LPS(I),LMAX )
          ENDDO
          LMAX=LMAX*2
-         P(NTYP)%LMAX_CALC=LMAX
+         P%LMAX_CALC=LMAX
 
          READ(10,'(A)') FORM            ! format of remaining entities
-         ALLOCATE( P(NTYP)%QPAW(CHANNELS,CHANNELS,0:LMAX),P(NTYP)%QATO(CHANNELS,CHANNELS), &
-                   P(NTYP)%R%R(NMAX), P(NTYP)%POTAE(NMAX),P(NTYP)%POTAE_XCUPDATED(NMAX), P(NTYP)%POTPS(NMAX),  &
-                   P(NTYP)%POTPSC(NMAX),P(NTYP)%TAUAE(NMAX),P(NTYP)%TAUPS(NMAX), &
-                   P(NTYP)%RHOAE(NMAX), P(NTYP)%RHOPS(NMAX),P(NTYP)%QTOT(CHANNELS,CHANNELS), &
-                   P(NTYP)%WAE(NMAX,CHANNELS), P(NTYP)%WPS(NMAX,CHANNELS), &
-                   P(NTYP)%NABLA(3,LMDIM,LMDIM))
+         ALLOCATE( P%QPAW(CHANNELS,CHANNELS,0:LMAX),P%QATO(CHANNELS,CHANNELS), &
+                   P%R%R(NMAX), P%POTAE(NMAX),P%POTAE_XCUPDATED(NMAX), P%POTPS(NMAX),  &
+                   P%POTPSC(NMAX),P%TAUAE(NMAX),P%TAUPS(NMAX), &
+                   P%RHOAE(NMAX), P%RHOPS(NMAX),P%QTOT(CHANNELS,CHANNELS), &
+                   P%WAE(NMAX,CHANNELS), P%WPS(NMAX,CHANNELS), &
+                   P%NABLA(3,LMDIM,LMDIM))
 
 ! Intel efc compiler workaround (at least version 6.X)
-!         P(NTYP)%NABLA=0
+!         P%NABLA=0
          DO I=1,LMDIM
             DO J=1,LMDIM
-               P(NTYP)%NABLA(1,I,J)=0
-               P(NTYP)%NABLA(2,I,J)=0
-               P(NTYP)%NABLA(3,I,J)=0
+               P%NABLA(1,I,J)=0
+               P%NABLA(2,I,J)=0
+               P%NABLA(3,I,J)=0
             ENDDO
          ENDDO
 
          READ(10,*)
 ! Intel efc compiler workaround (at least version 6.X)
-!         P(NTYP)%QPAW=0
+!         P%QPAW=0
          DO I=1,CHANNELS
             DO J=1,CHANNELS
                DO K=0,LMAX
-                  P(NTYP)%QPAW(I,J,K)=0
+                  P%QPAW(I,J,K)=0
                ENDDO
             ENDDO
          ENDDO
 
-         READ(10,FORM) P(NTYP)%QPAW(:,:,0)
+         READ(10,FORM) P%QPAW(:,:,0)
 
          READ(10,'(1X,A1)') CSEL
          IF (CSEL=='t') THEN
-            READ(10,*) P(NTYP)%QTOT
+            READ(10,*) P%QTOT
             READ(10,*)
          ELSE
             DO I=1,CHANNELS
                DO J=1,CHANNELS
-                  P(NTYP)%QTOT(I,J)=0
+                  P%QTOT(I,J)=0
                ENDDO
-               P(NTYP)%QTOT(I,I)=1
+               P%QTOT(I,I)=1
             ENDDO
          ENDIF
-         READ(10,FORM) P(NTYP)%QATO
+         READ(10,FORM) P%QATO
 
-         CALL READGRD(10,FORM,P(NTYP)%R%R,'g',IU0)
-         CALL READGRD(10,FORM,P(NTYP)%POTAE,'a',IU0)
-         P(NTYP)%POTAE_XCUPDATED=P(NTYP)%POTAE
-         CALL READGRD(10,FORM,P(NTYP)%RHOAE,'c',IU0)
+         CALL READGRD(10,FORM,P%R%R,'g',IU0)
+         CALL READGRD(10,FORM,P%POTAE,'a',IU0)
+         P%POTAE_XCUPDATED=P%POTAE
+         CALL READGRD(10,FORM,P%RHOAE,'c',IU0)
          READ(10,'(1X,A1)') CSEL
          IF (CSEL=='k') THEN
-            CALL READGRD_NO_SELECTOR(10,FORM,P(NTYP)%TAUAE,'k',CSEL,IU0)
+            CALL READGRD_NO_SELECTOR(10,FORM,P%TAUAE,'k',CSEL,IU0)
             READ(10,'(1X,A1)') CSEL
          ELSE
-            P(NTYP)%TAUAE=0
+            P%TAUAE=0
          ENDIF
          IF (CSEL=='m') THEN
-            CALL READGRD_NO_SELECTOR(10,FORM,P(NTYP)%TAUPS,'m',CSEL,IU0)
+            CALL READGRD_NO_SELECTOR(10,FORM,P%TAUPS,'m',CSEL,IU0)
             READ(10,'(1X,A1)') CSEL
          ELSE
-            P(NTYP)%TAUPS=0
+            P%TAUPS=0
          ENDIF
          LPOTPSC=.FALSE.
          IF (CSEL=='l') THEN
-            CALL READGRD_NO_SELECTOR(10,FORM,P(NTYP)%POTPSC,'l',CSEL,IU0)
+            CALL READGRD_NO_SELECTOR(10,FORM,P%POTPSC,'l',CSEL,IU0)
             LPOTPSC=.TRUE.
             READ(10,'(1X,A1)') CSEL
          ENDIF
-         CALL READGRD_NO_SELECTOR(10,FORM,P(NTYP)%POTPS,'p',CSEL,IU0)
-         CALL READGRD(10,FORM,P(NTYP)%RHOPS,'c',IU0)
+         CALL READGRD_NO_SELECTOR(10,FORM,P%POTPS,'p',CSEL,IU0)
+         CALL READGRD(10,FORM,P%RHOPS,'c',IU0)
 
-         P(NTYP)%R%NMAX  =NMAX
-         P(NTYP)%R%RSTART=P(NTYP)%R%R(1)
-         P(NTYP)%R%REND  =P(NTYP)%R%R(NMAX)
-         P(NTYP)%R%D     =(P(NTYP)%R%REND/P(NTYP)%R%RSTART)**(1._q/(NMAX-1))
-         P(NTYP)%R%H     =LOG(P(NTYP)%R%D)
-         P(NTYP)%R%RMAX=P(NTYP)%PSDMAX
+         P%R%NMAX  =NMAX
+         P%R%RSTART=P%R%R(1)
+         P%R%REND  =P%R%R(NMAX)
+         P%R%D     =(P%R%REND/P%R%RSTART)**(1._q/(NMAX-1))
+         P%R%H     =LOG(P%R%D)
+         P%R%RMAX=P%PSDMAX
  
          IF (.NOT. LPOTPSC) THEN
-            CALL POTTORHO( P(NTYP)%ZVALF, NPSPTS, P(NTYP)%PSP(:,2), P(NTYP)%PSGMAX/NPSPTS, &
-                 .TRUE. , NMAX, P(NTYP)%R%R ,  P(NTYP)%POTPSC )                        
+            CALL POTTORHO( P%ZVALF, NPSPTS, P%PSP(:,2), P%PSGMAX/NPSPTS, &
+                 .TRUE. , NMAX, P%R%R ,  P%POTPSC )                        
          ENDIF
 
          DO I=1,CHANNELS
-            CALL READGRD(10,FORM,P(NTYP)%WPS(:,I),'p',IU0)
-            CALL READGRD(10,FORM,P(NTYP)%WAE(:,I),'a',IU0)
+            CALL READGRD(10,FORM,P%WPS(:,I),'p',IU0)
+            CALL READGRD(10,FORM,P%WAE(:,I),'a',IU0)
          ENDDO
          READ(10,*,ERR=600,END=600) CSEL
          IF (NWRITE>=0.AND.IU6>=0) &
@@ -623,27 +624,28 @@ MODULE PSEUDO
       IF (NWRITE>=0.AND.IU6>=0) THEN
       WRITE(IU6,*)
       WRITE(IU6,*)'  number of l-projection  operators is LMAX  =', &
-     &            P(NTYP)%LMAX
+     &            P%LMAX
       WRITE(IU6,*)'  number of lm-projection operators is LMMAX =', &
-     &            P(NTYP)%LMMAX
+     &            P%LMMAX
       WRITE(IU6,*)
       ENDIF
       
-      CALL RDPARS_ATOMIC_CONFIGURATION(ISDIM,STRING,IREAD,P(NTYP),IU6)
+      CALL RDPARS_ATOMIC_CONFIGURATION(ISDIM,STRING,IREAD,P,IU6)
 
-      CALL RDPARS_ENERGY(ISDIM,STRING,IREAD,P(NTYP),IU6)
+      CALL RDPARS_ENERGY(ISDIM,STRING,IREAD,P,IU6)
 
-      ENDDO forever
+      !ENDDO forever
 
   100 CONTINUE
 
 
-      NTYP=NTYP-1
+      !NTYP=NTYP-1
       
 
       CLOSE(10)
       RETURN
-      END SUBROUTINE
+      
+  END SUBROUTINE RD_PSEUDO
 
 !******************* SUBROUTINE READGRD *******************************
 !
@@ -851,7 +853,8 @@ MODULE PSEUDO
 !
 !     set values
 !
-      L=128 !LENGTH(TAG)
+      !L=128
+      L=LEN_TRIM(TAG)
       IF (TAG(1:L)=='QCUT')   THEN
         P%LREAL=.TRUE.
         P%QOPT1=EDUM
@@ -1355,15 +1358,15 @@ MODULE PSEUDO
       INTEGER LORBIT       ! how do calculate partial dos
       INTEGER NTYPD        ! how many types are there
       INTEGER LDIMP,LMDIMP ! required dimension of arrays
-      TYPE (potcar) P(NTYPD)
+      TYPE (potcar) P
 ! local
       INTEGER MAXIMUM_L,NTYP,I
 
       MAXIMUM_L=0
 
       DO NTYP=1,NTYPD
-         DO I=1,P(NTYP)%LMAX
-            MAXIMUM_L = MAX(MAXIMUM_L,P(NTYP)%LPS(I))
+         DO I=1,P%LMAX
+            MAXIMUM_L = MAX(MAXIMUM_L,P%LPS(I))
          ENDDO
       ENDDO
       

@@ -220,10 +220,10 @@ CONTAINS
 !     - r>=10 bohr (for the ionic potential)
     sqr4pi=sqrt(4*pi)*1.d-10;PAW%ivion=gridindex(Grid,10.d0);
     PAW%ivale=PAW%ivion
-    do while (PAW%ivale<Grid%n.and. &
-&        abs(PAW%tden(PAW%ivale))>sqr4pi*Grid%r(PAW%ivale)**2)
-     PAW%ivale=PAW%ivale+1
-    end do
+!    do while (PAW%ivale<Grid%n.and. &
+!&        abs(PAW%tden(PAW%ivale))>sqr4pi*Grid%r(PAW%ivale)**2)
+!     PAW%ivale=PAW%ivale+1
+!    end do
 
   End SUBROUTINE Report_Pseudopotential
 

@@ -44,7 +44,7 @@
          REAL(q), ALLOCATABLE :: PARWKINAE(:,:), PARWKINPS(:,:)
          INTEGER :: nbase, N, irc, irc_core, irc_shap
          REAL(q) :: Q_v, Q_00 , Q_00c, tq, alpha, beta, random_x
-         TYPE(potcar), TARGET, ALLOCATABLE :: P(:)
+         TYPE(potcar),target :: P
          TYPE(potcar), POINTER :: PP
          TYPE(INFO_STRUCT) :: INFO
          TYPE(in_struct) IO
@@ -54,7 +54,7 @@
          INTEGER :: NTYP, NTYPD, LDIM, LDIM2, LMDIM,CHANNELS, LMAX, LMMAX, LI, MI, LMI
          INTEGER :: LMAX_TABLE, LYMAX 
          INTEGER :: CH1, CH2, LL, LLP, LMIN, LMAIN
-         REAL(q) ZVALF(1),POMASS(1),RWIGS(1), VCA(1)  ! valence, mass, wigner seitz radius
+         REAL(q) ZVALF,POMASS,RWIGS, VCA  ! valence, mass, wigner seitz radius
          REAL(q) ROOT(2), QR, Qloc, R_CUT, QQ
          REAL(q) :: DHARTREE, QCORE,SCALE, DOUBLEAE, EXCG
          REAL(q), ALLOCATABLE :: RHO(:,:,:), POT(:,:,:), V(:,:,:), RHOAE00(:), RHOPS00(:)
@@ -64,7 +64,7 @@
          REAL(q), ALLOCATABLE :: CRHODE(:,:)
          REAL(q), ALLOCATABLE :: RHOLM(:), DLM(:), DLLMM(:,:,:)!, GAUSSIAN(:)
          REAL(q), ALLOCATABLE :: DHXC(:,:), QPAW(:,:,:)
-         CHARACTER(LEN=2) :: TYPE(1)
+         CHARACTER(LEN=2) :: TYPEs
          LOGICAL ::   LPAW, UNSCREN, LXCADD
 !         INTEGER, EXTERNAL :: MAXL1
 !         LOGICAL, OPTIONAL :: success
@@ -73,15 +73,15 @@
          INTEGER :: IMESH
          REAL(q), EXTERNAL :: ERRF
 
-         ALLOCATE (P(1))
+         !ALLOCATE (P)
          NTYP = 1
          NTYPD = 1
          LDIM = 8
          LDIM2 = (LDIM*(LDIM+1))/2
          LMDIM = 64
-         POMASS(1) = 14.0
-         RWIGS(1) = 1.5
-         TYPE(1) = 'Si'
+         POMASS = 14.0
+         RWIGS = 1.5
+         TYPEs = 'Si'
 !         VCA(1) = 1.0
          LPAW = .TRUE.
          IU0 = 6
@@ -108,10 +108,8 @@
         IU20 = 24
         IU22 = 26
 
-         Call RD_PSEUDO(INFO, P, NTYP, NTYPD, LDIM, LDIM2, LMDIM, POMASS,     &
-     &                  RWIGS, TYPE,                       &
-     &                  CHANNELS, IU0, IU6, -1, LPAW)
-       PP => P(1)
+       Call RD_PSEUDO(INFO, P, LDIM, LDIM2, LMDIM, POMASS,RWIGS, TYPEs,CHANNELS, IU0, IU6, -1, LPAW)
+       PP => P
        SCALE = 2.0*sqrt(PI0)
 
        CALL SET_SIMP(PP%R)
@@ -542,7 +540,7 @@
          QQ = (j-1)*PP%PSGMAX/SIZE(PP%PSP,1)
          WRITE(IU23,'(6f20.8)') PP%PSP(j,1), PP%PSPRHO(j), -RHOPS_G(j)/2.0
       ENDDO
-      PP%PSPRHO(j) = -RHOPS_G(j)/2.0
+      PP%PSPRHO(:) = -RHOPS_G(:)/2.0
 
 !   ---------------- !!!!!! FOR CHECK !!!!! -------------------
 !      DO j=1, PP%R%NMAX
@@ -2146,7 +2144,7 @@
 !         WRITE(88,'(I12)') XC_TYPE
          WRITE(89,*) XC_TYPE
 
-        READ(30,'(A80)') CSEL
+        READ(30,'(1X,A1)') CSEL
 !        WRITE(88,'(A80)') CSEL
 !        WRITE(89,'(A80)') CSEL
       ENDIF
@@ -2189,7 +2187,7 @@
 !!!!!   ATOMIC PSEUDO CHARGE-DENSITY     !!!!!
 !      READ(30,'(A80)') CSEL
 !      WRITE(88,'(A80)') CSEL
-      IF(NWRITE >=0) WRITE(89,*) 'atomic pseudo charge-density'
+      IF(CSEL=="a") WRITE(89,*) 'atomic pseudo charge-density'
       READ(30,*) (POTCAR_DATA (I),I=1,NPSPTS)
 !      WRITE(88,'(5E16.8)') (POTCAR_DATA (I),I=1,NPSPTS)
       WRITE(89,'(5E16.8)') (POTCAR_DATA (I),I=1,NPSPTS)
@@ -2218,9 +2216,9 @@
         READ(30,*) L1, NL1, POTCAR_R_PARAM
 !        WRITE(88,'(2I12, F19.14)') L1, NL1, POTCAR_R_PARAM
         WRITE(89,'(2I12, F19.14)') L1, NL1, POTCAR_R_PARAM
-        READ(30,*) (POTCAR_DATA (I),I=1,4)
+        READ(30,*) (POTCAR_DATA (I),I=1,NL1**2)
 !        WRITE(88,'(F19.14, 2F24.13)') (POTCAR_DATA (I),I=1,4)
-        WRITE(89,'(F19.14, 2F24.13)') (POTCAR_DATA (I),I=1,4)
+        WRITE(89,'(F19.14, 2F24.13)') (POTCAR_DATA (I),I=1,NL1**2)
 
         DO LI = 1, NL1
 !        ALLOCATE(VASP_PROJ_R(NPSNL), VASP_PSNL_CHECK(NPSNL), VASP_PSRNL_CHECK(NSPNL))
